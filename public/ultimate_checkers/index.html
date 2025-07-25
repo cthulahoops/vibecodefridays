@@ -81,6 +81,18 @@
             border-top-color: #e8e8e8;
         }
 
+        .hex-cell.medium {
+            background: #888;
+        }
+
+        .hex-cell.medium:before {
+            border-bottom-color: #888;
+        }
+
+        .hex-cell.medium:after {
+            border-top-color: #888;
+        }
+
         .hex-cell:hover {
             transform: scale(1.05);
             filter: brightness(1.2);
@@ -545,6 +557,7 @@
                 player1: { primary: '#ff4444', secondary: '#cc0000', shadow: 'rgba(255, 68, 68, 0.4)' },
                 player2: { primary: '#4444ff', secondary: '#0000cc', shadow: 'rgba(68, 68, 255, 0.4)' },
                 boardLight: '#e8e8e8',
+                boardMedium: '#888',
                 boardDark: '#444',
                 background: 'linear-gradient(135deg, #1a1a2e, #16213e)'
             },
@@ -553,6 +566,7 @@
                 player1: { primary: '#ff0099', secondary: '#cc0066', shadow: 'rgba(255, 0, 153, 0.6)' },
                 player2: { primary: '#00ffff', secondary: '#00cccc', shadow: 'rgba(0, 255, 255, 0.6)' },
                 boardLight: '#333366',
+                boardMedium: '#4d1a4d',
                 boardDark: '#660066',
                 background: 'linear-gradient(135deg, #0d0d1a, #1a0d1a)'
             },
@@ -609,6 +623,7 @@
                 player1: { primary: '#ff0000', secondary: '#800000', shadow: 'rgba(255, 0, 0, 1)' },
                 player2: { primary: '#800080', secondary: '#400040', shadow: 'rgba(128, 0, 128, 1)' },
                 boardLight: '#1a0000',
+                boardMedium: '#0d0000',
                 boardDark: '#000000',
                 background: 'linear-gradient(135deg, #000000, #1a0000, #000000, #0a0a0a)'
             },
@@ -878,10 +893,14 @@
             hex.style.left = x + 'px';
             hex.style.top = y + 'px';
             
-            // Alternating colors
-            if ((q + r) % 2 === 0) {
+            // Three-color tiling - no adjacent hexes have same color
+            const colorIndex = ((q - r) % 3 + 3) % 3;
+            if (colorIndex === 1) {
                 hex.classList.add('light');
+            } else if (colorIndex === 2) {
+                hex.classList.add('medium');
             }
+            // colorIndex === 0 gets default dark color
             
             hex.addEventListener('click', () => handleCellClick(q, r));
             
@@ -890,26 +909,35 @@
 
         // Setup initial piece positions
         function setupInitialPieces() {
-            // Player 1 (red) pieces - top rows of the board
-            // Dark squares are where (q + r) % 2 !== 0
-            const player1Positions = [
-                // Top row (r = -5) - dark squares: (-4,-5), (-2,-5), (0,-5), (2,-5), (4,-5)
-                [-4, -5], [-2, -5], [0, -5], [2, -5], [4, -5],
-                // Second row (r = -4) - dark squares: (-3,-4), (-1,-4), (1,-4), (3,-4) 
-                [-1, -4], [1, -4], [3, -4], [5, -4],
-                // Third row (r = -3) - dark squares: (-4,-3), (-2,-3), (0,-3), (2,-3), (4,-3)
-                [-4, -3], [-2, -3], [0, -3], [2, -3], [4, -3]
-            ];
+            // Helper function to check if a hex is dark (colorIndex === 0)
+            function isDarkHex(q, r) {
+                const colorIndex = ((q - r) % 3 + 3) % 3;
+                return colorIndex === 0;
+            }
             
-            // Player 2 (blue) pieces - bottom rows of the board  
-            const player2Positions = [
-                // Third from bottom row (r = 3) - dark squares: (-4,3), (-2,3), (0,3), (2,3), (4,3)
-                [-4, 3], [-2, 3], [0, 3], [2, 3], [4, 3],
-                // Second from bottom row (r = 4) - dark squares: (-3,4), (-1,4), (1,4), (3,4)
-                [-5, 4], [-3, 4], [-1, 4], [1, 4],
-                // Bottom row (r = 5) - dark squares: (-4,5), (-2,5), (0,5), (2,5), (4,5)
-                [-4, 5], [-2, 5], [0, 5], [2, 5], [4, 5]
-            ];
+            // Player 1 (red) pieces - top four rows of the board (r = -5 to -2)
+            const player1Positions = [];
+            for (let r = -5; r <= -2; r++) {
+                const q1 = Math.max(-BOARD_SIZE, -r - BOARD_SIZE);
+                const q2 = Math.min(BOARD_SIZE, -r + BOARD_SIZE);
+                for (let q = q1; q <= q2; q++) {
+                    if (isDarkHex(q, r)) {
+                        player1Positions.push([q, r]);
+                    }
+                }
+            }
+            
+            // Player 2 (blue) pieces - bottom four rows of the board (r = 2 to 5)
+            const player2Positions = [];
+            for (let r = 2; r <= 5; r++) {
+                const q1 = Math.max(-BOARD_SIZE, -r - BOARD_SIZE);
+                const q2 = Math.min(BOARD_SIZE, -r + BOARD_SIZE);
+                for (let q = q1; q <= q2; q++) {
+                    if (isDarkHex(q, r)) {
+                        player2Positions.push([q, r]);
+                    }
+                }
+            }
             
             player1Positions.forEach(([q, r]) => {
                 if (gameState.board[`${q},${r}`]) {
@@ -1416,14 +1444,16 @@
             }
             
             // Update board colors
-            document.querySelectorAll('.hex-cell:not(.light)').forEach(cell => {
-                cell.style.background = palette.boardDark;
-                cell.querySelector('::before') && (cell.style.borderBottomColor = palette.boardDark);
-                cell.querySelector('::after') && (cell.style.borderTopColor = palette.boardDark);
+            document.querySelectorAll('.hex-cell:not(.light):not(.medium)').forEach(cell => {
+                cell.style.background = palette.boardDark || '#444';
             });
             
             document.querySelectorAll('.hex-cell.light').forEach(cell => {
-                cell.style.background = palette.boardLight;
+                cell.style.background = palette.boardLight || '#e8e8e8';
+            });
+            
+            document.querySelectorAll('.hex-cell.medium').forEach(cell => {
+                cell.style.background = palette.boardMedium || '#888';
             });
             
             // Update piece colors
