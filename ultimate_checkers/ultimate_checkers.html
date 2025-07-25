@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Hexagonal Checkers</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .board-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hex-board {
+            position: relative;
+            background: #2a2a4a;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .hex-cell {
+            position: absolute;
+            width: 52px;
+            height: 30px;
+            background: #444;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hex-cell:before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 26px solid transparent;
+            border-right: 26px solid transparent;
+            border-bottom: 15px solid #444;
+        }
+
+        .hex-cell:after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 26px solid transparent;
+            border-right: 26px solid transparent;
+            border-top: 15px solid #444;
+        }
+
+        .hex-cell.light {
+            background: #e8e8e8;
+        }
+
+        .hex-cell.light:before {
+            border-bottom-color: #e8e8e8;
+        }
+
+        .hex-cell.light:after {
+            border-top-color: #e8e8e8;
+        }
+
+        .hex-cell:hover {
+            transform: scale(1.05);
+            filter: brightness(1.2);
+        }
+
+        .hex-cell.selected {
+            filter: brightness(1.5) drop-shadow(0 0 10px #ffd700);
+        }
+
+        .hex-cell.valid-move {
+            filter: brightness(1.3) drop-shadow(0 0 8px #00ff00);
+        }
+
+        .piece {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .piece.player1 {
+            background: radial-gradient(circle, #ff4444, #cc0000);
+            box-shadow: 0 4px 8px rgba(255, 68, 68, 0.4);
+        }
+
+        .piece.player2 {
+            background: radial-gradient(circle, #4444ff, #0000cc);
+            box-shadow: 0 4px 8px rgba(68, 68, 255, 0.4);
+        }
+
+        .piece.king {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+
+        .piece.king:after {
+            content: '♛';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffd700;
+            font-size: 20px;
+        }
+
+        .piece.pizza {
+            background: radial-gradient(circle, #ffcc44, #ff8800) !important;
+            border-color: #cc6600 !important;
+            box-shadow: 0 4px 8px rgba(255, 136, 0, 0.6) !important;
+        }
+
+        .piece.pizza.player1:before {
+            content: '🍕';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            z-index: 11;
+        }
+
+        .piece.pizza.player2:before {
+            content: '🌮';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            z-index: 11;
+        }
+
+        .piece.pizza.player1.king:before {
+            content: '👑🍕';
+            font-size: 20px;
+        }
+
+        .piece.pizza.player2.king:before {
+            content: '👑🌮';
+            font-size: 20px;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(42, 42, 74, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            height: fit-content;
+        }
+
+        .game-info {
+            margin-bottom: 30px;
+        }
+
+        .current-player {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .player1-turn {
+            background: rgba(255, 68, 68, 0.3);
+            border: 2px solid #ff4444;
+        }
+
+        .player2-turn {
+            background: rgba(68, 68, 255, 0.3);
+            border: 2px solid #4444ff;
+        }
+
+        .timer {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #444;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #666;
+        }
+
+        .btn.primary {
+            background: #007acc;
+        }
+
+        .btn.primary:hover {
+            background: #0066aa;
+        }
+
+        .commentary {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .commentary-line {
+            margin-bottom: 5px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .title {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff4444, #4444ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes spin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .piece.capturing {
+            animation: extreme-capture 1.5s ease-in-out;
+        }
+
+        @keyframes extreme-capture {
+            0% { 
+                transform: translate(-50%, -50%) rotate(0deg) scale(1);
+                opacity: 1;
+                filter: brightness(1);
+            }
+            25% { 
+                transform: translate(-50%, -50%) rotate(180deg) scale(1.5);
+                opacity: 0.8;
+                filter: brightness(2) hue-rotate(90deg);
+            }
+            50% { 
+                transform: translate(-50%, -50%) rotate(360deg) scale(2);
+                opacity: 0.6;
+                filter: brightness(3) hue-rotate(180deg) blur(2px);
+            }
+            75% { 
+                transform: translate(-50%, -50%) rotate(540deg) scale(0.5);
+                opacity: 0.3;
+                filter: brightness(4) hue-rotate(270deg) blur(4px);
+            }
+            100% { 
+                transform: translate(-50%, -50%) rotate(720deg) scale(0);
+                opacity: 0;
+                filter: brightness(5) hue-rotate(360deg) blur(8px);
+            }
+        }
+
+        @keyframes tornado {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            25% { transform: translate(-50%, -50%) rotate(90deg) scale(1.2); }
+            50% { transform: translate(-50%, -50%) rotate(180deg) scale(0.8); }
+            75% { transform: translate(-50%, -50%) rotate(270deg) scale(1.1); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+        }
+
+        .piece.tornado {
+            animation: tornado 2s ease-in-out;
+        }
+
+        .hex-board.tornado-active {
+            animation: shake 0.1s infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            25% { transform: translateX(-2px) translateY(-2px); }
+            50% { transform: translateX(2px) translateY(-2px); }
+            75% { transform: translateX(-2px) translateY(2px); }
+        }
+
+        /* Nightmare mode effects */
+        .nightmare-mode {
+            filter: contrast(1.5) saturate(2);
+        }
+
+        .nightmare-mode .hex-cell {
+            box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+
+        .nightmare-mode .piece {
+            box-shadow: 0 0 15px currentColor !important;
+            animation: nightmare-pulse 2s infinite;
+        }
+
+        .nightmare-mode .piece.player1 {
+            box-shadow: 0 0 20px #ff0000 !important;
+        }
+
+        .nightmare-mode .piece.player2 {
+            box-shadow: 0 0 20px #800080 !important;
+        }
+
+        @keyframes nightmare-pulse {
+            0%, 100% { filter: brightness(1) drop-shadow(0 0 5px currentColor); }
+            50% { filter: brightness(1.5) drop-shadow(0 0 15px currentColor); }
+        }
+
+        .nightmare-mode .hex-board {
+            animation: nightmare-flicker 3s infinite;
+        }
+
+        @keyframes nightmare-flicker {
+            0%, 95%, 100% { opacity: 1; }
+            96%, 98% { opacity: 0.9; }
+            97% { opacity: 0.95; }
+        }
+
+        .nightmare-mode .title {
+            animation: nightmare-text 1s infinite;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        @keyframes nightmare-text {
+            0%, 100% { text-shadow: 0 0 10px #ff0000; }
+            50% { text-shadow: 0 0 20px #ff0000, 0 0 30px #800080; }
+        }
+
+        /* Command line interface */
+        .command-line {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 2px solid #00ff00;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            color: #00ff00;
+            display: none;
+            z-index: 1000;
+        }
+
+        .command-line.visible {
+            display: block;
+        }
+
+        .command-prompt {
+            display: flex;
+            align-items: center;
+        }
+
+        .command-prefix {
+            color: #ffff00;
+            margin-right: 5px;
+        }
+
+        .command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .command-cursor {
+            background: #00ff00;
+            width: 2px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .command-history {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .command-output {
+            color: #00cccc;
+            margin: 2px 0;
+        }
+
+        .hex-cell.keyboard-selected {
+            box-shadow: 0 0 15px #ffff00, inset 0 0 10px rgba(255, 255, 0, 0.3);
+            filter: brightness(1.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="title">🔥 ULTIMATE HEXAGONAL CHECKERS 🔥</div>
+    
+    <div class="game-container">
+        <div class="board-container">
+            <div class="hex-board" id="hexBoard"></div>
+        </div>
+        
+        <div class="sidebar">
+            <div class="game-info">
+                <div class="current-player" id="currentPlayer"></div>
+                
+                <div class="timer">
+                    <div class="timer-display" id="timer1">05:00</div>
+                    <div class="timer-display" id="timer2">05:00</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn primary" onclick="newGame()">New Game</button>
+                <button class="btn" onclick="flipBoard()">Flip Board</button>
+                <button class="btn" onclick="toggleTimer()">Toggle Timer</button>
+                <button class="btn" onclick="toggleSound()">🔊 Sound</button>
+                <button class="btn" onclick="toggleCommandLine()">⌨️ CLI</button>
+                <br>
+                <select id="inputModeSelect" onchange="changeInputMode()" class="btn" style="margin: 5px; padding: 8px;">
+                    <option value="normal">Mouse Control</option>
+                    <option value="vi">Vi Keybindings</option>
+                    <option value="emacs">Emacs Keybindings</option>
+                </select>
+                <br>
+                <select id="paletteSelect" onchange="changePalette()" class="btn" style="margin: 5px; padding: 8px;">
+                    <option value="classic">Classic</option>
+                    <option value="neon">Neon</option>
+                    <option value="forest">Forest</option>
+                    <option value="sunset">Sunset</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="volcanic">🌋 VOLCANIC</option>
+                    <option value="toxic">☢️ TOXIC</option>
+                    <option value="electric">⚡ ELECTRIC</option>
+                    <option value="nightmare">👹 NIGHTMARE</option>
+                    <option value="rainbow">🌈 RAINBOW</option>
+                    <option value="cyberpunk">🤖 CYBERPUNK</option>
+                    <option value="molten">🔥 MOLTEN LAVA</option>
+                    <option value="alien">👽 ALIEN INVASION</option>
+                    <option value="cosmic">🌌 COSMIC VOID</option>
+                    <option value="matrix">💊 MATRIX CODE</option>
+                </select>
+                <br>
+                <button class="btn" onclick="togglePizzaMode()" style="background: #ff8800;">🍕🌮 FOOD FIGHT</button>
+                <button class="btn" onclick="tornadoEvent()" style="background: #666666;">🌪️ TORNADO</button>
+                <button class="btn" onclick="rageMode()" style="background: #cc0000;">RAGE MODE</button>
+            </div>
+            
+            <div class="commentary" id="commentary">
+                <div class="commentary-line">🎙️ Welcome to ULTIMATE HEXAGONAL CHECKERS!</div>
+                <div class="commentary-line">The crowd is absolutely electric tonight!</div>
+                <div class="commentary-line">Two players, one hexagonal battlefield!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Line Interface -->
+    <div class="command-line" id="commandLine">
+        <div class="command-history" id="commandHistory"></div>
+        <div class="command-prompt">
+            <span class="command-prefix" id="commandPrefix">$</span>
+            <input type="text" class="command-input" id="commandInput" placeholder="Enter command...">
+            <span class="command-cursor"></span>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            board: {},
+            currentPlayer: 1,
+            selectedPiece: null,
+            gameActive: true,
+            timer1: 300, // 5 minutes in seconds
+            timer2: 300,
+            timerActive: false,
+            timerInterval: null,
+            pizzaMode: false,
+            currentPalette: 'classic',
+            soundEnabled: true,
+            inputMode: 'normal', // 'normal', 'vi', 'emacs'
+            commandMode: false,
+            selectedCell: { q: 0, r: 0 }, // For keyboard navigation
+            commandHistory: [],
+            historyIndex: -1
+        };
+
+        // Color palettes
+        const colorPalettes = {
+            classic: {
+                name: 'Classic',
+                player1: { primary: '#ff4444', secondary: '#cc0000', shadow: 'rgba(255, 68, 68, 0.4)' },
+                player2: { primary: '#4444ff', secondary: '#0000cc', shadow: 'rgba(68, 68, 255, 0.4)' },
+                boardLight: '#e8e8e8',
+                boardDark: '#444',
+                background: 'linear-gradient(135deg, #1a1a2e, #16213e)'
+            },
+            neon: {
+                name: 'Neon',
+                player1: { primary: '#ff0099', secondary: '#cc0066', shadow: 'rgba(255, 0, 153, 0.6)' },
+                player2: { primary: '#00ffff', secondary: '#00cccc', shadow: 'rgba(0, 255, 255, 0.6)' },
+                boardLight: '#333366',
+                boardDark: '#660066',
+                background: 'linear-gradient(135deg, #0d0d1a, #1a0d1a)'
+            },
+            forest: {
+                name: 'Forest',
+                player1: { primary: '#ff6600', secondary: '#cc4400', shadow: 'rgba(255, 102, 0, 0.5)' },
+                player2: { primary: '#00aa44', secondary: '#008833', shadow: 'rgba(0, 170, 68, 0.5)' },
+                boardLight: '#88cc88',
+                boardDark: '#2d5016',
+                background: 'linear-gradient(135deg, #1a2e1a, #0d1f0d)'
+            },
+            sunset: {
+                name: 'Sunset',
+                player1: { primary: '#ff4466', secondary: '#cc2244', shadow: 'rgba(255, 68, 102, 0.5)' },
+                player2: { primary: '#ffaa22', secondary: '#cc8800', shadow: 'rgba(255, 170, 34, 0.5)' },
+                boardLight: '#ffddaa',
+                boardDark: '#664422',
+                background: 'linear-gradient(135deg, #2e1a0d, #4d2619)'
+            },
+            ocean: {
+                name: 'Ocean',
+                player1: { primary: '#0066cc', secondary: '#004499', shadow: 'rgba(0, 102, 204, 0.5)' },
+                player2: { primary: '#00ccaa', secondary: '#009988', shadow: 'rgba(0, 204, 170, 0.5)' },
+                boardLight: '#aaeeff',
+                boardDark: '#224466',
+                background: 'linear-gradient(135deg, #0d1f2e, #194d66)'
+            },
+            volcanic: {
+                name: '🌋 VOLCANIC',
+                player1: { primary: '#ff0000', secondary: '#cc0000', shadow: 'rgba(255, 0, 0, 0.8)' },
+                player2: { primary: '#ff4400', secondary: '#cc2200', shadow: 'rgba(255, 68, 0, 0.8)' },
+                boardLight: '#ffaa44',
+                boardDark: '#330000',
+                background: 'linear-gradient(135deg, #1a0000, #4d0000)'
+            },
+            toxic: {
+                name: '☢️ TOXIC',
+                player1: { primary: '#00ff00', secondary: '#00cc00', shadow: 'rgba(0, 255, 0, 0.8)' },
+                player2: { primary: '#88ff00', secondary: '#66cc00', shadow: 'rgba(136, 255, 0, 0.8)' },
+                boardLight: '#44ff44',
+                boardDark: '#001100',
+                background: 'linear-gradient(135deg, #001a00, #004d00)'
+            },
+            electric: {
+                name: '⚡ ELECTRIC',
+                player1: { primary: '#ffff00', secondary: '#cccc00', shadow: 'rgba(255, 255, 0, 0.9)' },
+                player2: { primary: '#ff00ff', secondary: '#cc00cc', shadow: 'rgba(255, 0, 255, 0.9)' },
+                boardLight: '#ccccff',
+                boardDark: '#440088',
+                background: 'linear-gradient(135deg, #0a0a1a, #2d0a4d)'
+            },
+            nightmare: {
+                name: '👹 NIGHTMARE',
+                player1: { primary: '#ff0000', secondary: '#800000', shadow: 'rgba(255, 0, 0, 1)' },
+                player2: { primary: '#800080', secondary: '#400040', shadow: 'rgba(128, 0, 128, 1)' },
+                boardLight: '#1a0000',
+                boardDark: '#000000',
+                background: 'linear-gradient(135deg, #000000, #1a0000, #000000, #0a0a0a)'
+            },
+            rainbow: {
+                name: '🌈 RAINBOW',
+                player1: { primary: '#ff6666', secondary: '#cc3333', shadow: 'rgba(255, 102, 102, 0.6)' },
+                player2: { primary: '#6666ff', secondary: '#3333cc', shadow: 'rgba(102, 102, 255, 0.6)' },
+                boardLight: '#ffccff',
+                boardDark: '#663366',
+                background: 'linear-gradient(135deg, #ff0066, #0066ff, #66ff00, #ffff00)'
+            },
+            cyberpunk: {
+                name: '🤖 CYBERPUNK',
+                player1: { primary: '#ff00ff', secondary: '#cc00cc', shadow: 'rgba(255, 0, 255, 1)' },
+                player2: { primary: '#00ffff', secondary: '#00cccc', shadow: 'rgba(0, 255, 255, 1)' },
+                boardLight: '#ff0080',
+                boardDark: '#0080ff',
+                background: 'linear-gradient(135deg, #000015, #001122, #002200, #220011)'
+            },
+            molten: {
+                name: '🔥 MOLTEN LAVA',
+                player1: { primary: '#ff4400', secondary: '#cc2200', shadow: 'rgba(255, 68, 0, 1)' },
+                player2: { primary: '#ffaa00', secondary: '#cc8800', shadow: 'rgba(255, 170, 0, 1)' },
+                boardLight: '#ff6600',
+                boardDark: '#990000',
+                background: 'radial-gradient(circle, #ff0000, #aa0000, #440000, #000000)'
+            },
+            alien: {
+                name: '👽 ALIEN INVASION',
+                player1: { primary: '#88ff00', secondary: '#66cc00', shadow: 'rgba(136, 255, 0, 1)' },
+                player2: { primary: '#ff8800', secondary: '#cc6600', shadow: 'rgba(255, 136, 0, 1)' },
+                boardLight: '#44ff44',
+                boardDark: '#004400',
+                background: 'radial-gradient(circle, #002200, #001100, #000600, #000000)'
+            },
+            cosmic: {
+                name: '🌌 COSMIC VOID',
+                player1: { primary: '#8800ff', secondary: '#6600cc', shadow: 'rgba(136, 0, 255, 1)' },
+                player2: { primary: '#ff0088', secondary: '#cc0066', shadow: 'rgba(255, 0, 136, 1)' },
+                boardLight: '#4400ff',
+                boardDark: '#220044',
+                background: 'radial-gradient(ellipse, #110033, #000011, #000000, #000000)'
+            },
+            matrix: {
+                name: '💊 MATRIX CODE',
+                player1: { primary: '#00ff00', secondary: '#00cc00', shadow: 'rgba(0, 255, 0, 1)' },
+                player2: { primary: '#ff0000', secondary: '#cc0000', shadow: 'rgba(255, 0, 0, 1)' },
+                boardLight: '#002200',
+                boardDark: '#000000',
+                background: 'linear-gradient(135deg, #000000, #001100, #000000, #002200)'
+            }
+        };
+
+        // Sound effects using Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Sound effect generators
+        const soundEffects = {
+            // Movement sound - gets higher pitched as pieces advance
+            move: (pitch = 1) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(200 * pitch, audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            },
+            
+            // Wilhelm scream approximation - gets louder with each capture
+            capture: (intensity = 1) => {
+                const oscillator1 = audioContext.createOscillator();
+                const oscillator2 = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator1.connect(gainNode);
+                oscillator2.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Create a descending scream-like sound
+                oscillator1.frequency.setValueAtTime(800 * intensity, audioContext.currentTime);
+                oscillator1.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.5);
+                oscillator1.type = 'sawtooth';
+                
+                oscillator2.frequency.setValueAtTime(400 * intensity, audioContext.currentTime);
+                oscillator2.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.4);
+                oscillator2.type = 'square';
+                
+                gainNode.gain.setValueAtTime(0.15 * intensity, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+                
+                oscillator1.start(audioContext.currentTime);
+                oscillator2.start(audioContext.currentTime + 0.1);
+                oscillator1.stop(audioContext.currentTime + 0.6);
+                oscillator2.stop(audioContext.currentTime + 0.5);
+            },
+            
+            // King promotion fanfare
+            promotion: () => {
+                const notes = [261.63, 329.63, 392.00, 523.25]; // C, E, G, C
+                notes.forEach((freq, index) => {
+                    setTimeout(() => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                        oscillator.type = 'triangle';
+                        
+                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.4);
+                    }, index * 150);
+                });
+            },
+            
+            // Game end victory sound
+            victory: () => {
+                const melody = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C (octave)
+                melody.forEach((freq, index) => {
+                    setTimeout(() => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                        oscillator.type = 'triangle';
+                        
+                        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.6);
+                    }, index * 200);
+                });
+            },
+            
+            // Tornado wind sound
+            tornado: () => {
+                const oscillator1 = audioContext.createOscillator();
+                const oscillator2 = audioContext.createOscillator();
+                const oscillator3 = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator1.connect(gainNode);
+                oscillator2.connect(gainNode);
+                oscillator3.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Create swirling wind sound
+                oscillator1.frequency.setValueAtTime(100, audioContext.currentTime);
+                oscillator1.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 1);
+                oscillator1.frequency.exponentialRampToValueAtTime(80, audioContext.currentTime + 2);
+                oscillator1.type = 'sawtooth';
+                
+                oscillator2.frequency.setValueAtTime(150, audioContext.currentTime);
+                oscillator2.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 1.5);
+                oscillator2.frequency.exponentialRampToValueAtTime(120, audioContext.currentTime + 2);
+                oscillator2.type = 'square';
+                
+                oscillator3.frequency.setValueAtTime(200, audioContext.currentTime);
+                oscillator3.frequency.exponentialRampToValueAtTime(500, audioContext.currentTime + 1);
+                oscillator3.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 2);
+                oscillator3.type = 'triangle';
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.2, audioContext.currentTime + 1);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+                
+                oscillator1.start(audioContext.currentTime);
+                oscillator2.start(audioContext.currentTime + 0.2);
+                oscillator3.start(audioContext.currentTime + 0.4);
+                oscillator1.stop(audioContext.currentTime + 2);
+                oscillator2.stop(audioContext.currentTime + 2);
+                oscillator3.stop(audioContext.currentTime + 2);
+            },
+            
+            // Nightmare ambiance
+            nightmare: () => {
+                const oscillator1 = audioContext.createOscillator();
+                const oscillator2 = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator1.connect(gainNode);
+                oscillator2.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Create eerie low frequency drones
+                oscillator1.frequency.setValueAtTime(55, audioContext.currentTime); // Low A
+                oscillator1.frequency.exponentialRampToValueAtTime(45, audioContext.currentTime + 2);
+                oscillator1.type = 'sawtooth';
+                
+                oscillator2.frequency.setValueAtTime(66, audioContext.currentTime); // Low B♭
+                oscillator2.frequency.exponentialRampToValueAtTime(58, audioContext.currentTime + 2);
+                oscillator2.type = 'triangle';
+                
+                gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.15, audioContext.currentTime + 1);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+                
+                oscillator1.start(audioContext.currentTime);
+                oscillator2.start(audioContext.currentTime + 0.3);
+                oscillator1.stop(audioContext.currentTime + 2);
+                oscillator2.stop(audioContext.currentTime + 2);
+            }
+        };
+
+        // Track capture count for Wilhelm scream intensity
+        let captureCount = 0;
+
+        // Hexagonal board coordinates - using axial coordinates (q, r)
+        const BOARD_SIZE = 5; // hexagons from center to edge
+        const HEX_SIZE = 35;
+        const HEX_WIDTH = HEX_SIZE * 2;
+        const HEX_HEIGHT = Math.sqrt(3) * HEX_SIZE;
+
+        // Initialize the game
+        function initGame() {
+            generateHexBoard();
+            setupInitialPieces();
+            updateDisplay();
+            addCommentary("The battle begins! Red pieces advance from the north!");
+        }
+
+        // Generate hexagonal board coordinates
+        function generateHexBoard() {
+            const board = document.getElementById('hexBoard');
+            board.innerHTML = '';
+            gameState.board = {};
+
+            for (let q = -BOARD_SIZE; q <= BOARD_SIZE; q++) {
+                const r1 = Math.max(-BOARD_SIZE, -q - BOARD_SIZE);
+                const r2 = Math.min(BOARD_SIZE, -q + BOARD_SIZE);
+                
+                for (let r = r1; r <= r2; r++) {
+                    const hex = createHexCell(q, r);
+                    board.appendChild(hex);
+                    gameState.board[`${q},${r}`] = { piece: null };
+                }
+            }
+        }
+
+        // Create individual hex cell
+        function createHexCell(q, r) {
+            const hex = document.createElement('div');
+            hex.className = 'hex-cell';
+            hex.dataset.q = q;
+            hex.dataset.r = r;
+            
+            // Position calculation for flat-top hexagonal grid
+            const x = HEX_SIZE * (Math.sqrt(3) * q + Math.sqrt(3)/2 * r);
+            const y = HEX_SIZE * (3/2 * r);
+            
+            hex.style.left = (x + 200) + 'px';
+            hex.style.top = (y + 250) + 'px';
+            
+            // Alternating colors
+            if ((q + r) % 2 === 0) {
+                hex.classList.add('light');
+            }
+            
+            hex.addEventListener('click', () => handleCellClick(q, r));
+            
+            return hex;
+        }
+
+        // Setup initial piece positions
+        function setupInitialPieces() {
+            // Player 1 (red) pieces - top rows of the board
+            const player1Positions = [
+                // Top row (r = -5) - alternating pattern like checkers
+                [-2, -5], [0, -5], [2, -5],
+                // Second row (r = -4) - offset pattern
+                [-3, -4], [-1, -4], [1, -4], [3, -4],
+                // Third row (r = -3) - alternating pattern
+                [-2, -3], [0, -3], [2, -3]
+            ];
+            
+            // Player 2 (blue) pieces - bottom rows of the board  
+            const player2Positions = [
+                // Third from bottom row (r = 3) - alternating pattern
+                [-2, 3], [0, 3], [2, 3],
+                // Second from bottom row (r = 4) - offset pattern  
+                [-3, 4], [-1, 4], [1, 4], [3, 4],
+                // Bottom row (r = 5) - alternating pattern
+                [-2, 5], [0, 5], [2, 5]
+            ];
+            
+            player1Positions.forEach(([q, r]) => {
+                if (gameState.board[`${q},${r}`]) {
+                    placePiece(q, r, 1);
+                }
+            });
+            
+            player2Positions.forEach(([q, r]) => {
+                if (gameState.board[`${q},${r}`]) {
+                    placePiece(q, r, 2);
+                }
+            });
+        }
+
+        // Place a piece on the board
+        function placePiece(q, r, player, isKing = false) {
+            const cell = document.querySelector(`[data-q="${q}"][data-r="${r}"]`);
+            if (!cell) return;
+            
+            const piece = document.createElement('div');
+            piece.className = `piece player${player}`;
+            if (isKing) piece.classList.add('king');
+            if (gameState.pizzaMode) piece.classList.add('pizza');
+            
+            piece.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handlePieceClick(q, r);
+            });
+            
+            cell.appendChild(piece);
+            gameState.board[`${q},${r}`].piece = { player, isKing };
+        }
+
+        // Handle cell clicks
+        function handleCellClick(q, r) {
+            if (!gameState.gameActive) return;
+            
+            const key = `${q},${r}`;
+            const cell = gameState.board[key];
+            
+            if (gameState.selectedPiece) {
+                // Try to move selected piece
+                if (isValidMove(gameState.selectedPiece.q, gameState.selectedPiece.r, q, r)) {
+                    movePiece(gameState.selectedPiece.q, gameState.selectedPiece.r, q, r);
+                }
+                clearSelection();
+            }
+        }
+
+        // Handle piece clicks
+        function handlePieceClick(q, r) {
+            if (!gameState.gameActive) return;
+            
+            const piece = gameState.board[`${q},${r}`].piece;
+            console.log(`Piece clicked at ${q},${r}:`, piece, `Current player: ${gameState.currentPlayer}`);
+            
+            if (piece && piece.player === gameState.currentPlayer) {
+                selectPiece(q, r);
+            }
+        }
+
+        // Select a piece
+        function selectPiece(q, r) {
+            clearSelection();
+            
+            gameState.selectedPiece = { q, r };
+            const cell = document.querySelector(`[data-q="${q}"][data-r="${r}"]`);
+            cell.classList.add('selected');
+            
+            // Highlight valid moves
+            highlightValidMoves(q, r);
+        }
+
+        // Clear selection
+        function clearSelection() {
+            document.querySelectorAll('.hex-cell').forEach(cell => {
+                cell.classList.remove('selected', 'valid-move');
+            });
+            gameState.selectedPiece = null;
+        }
+
+        // Highlight valid moves for a piece
+        function highlightValidMoves(q, r) {
+            const validMoves = getValidMoves(q, r);
+            validMoves.forEach(([moveQ, moveR]) => {
+                const cell = document.querySelector(`[data-q="${moveQ}"][data-r="${moveR}"]`);
+                if (cell) cell.classList.add('valid-move');
+            });
+        }
+
+        // Get valid moves for a piece
+        function getValidMoves(q, r) {
+            const piece = gameState.board[`${q},${r}`].piece;
+            if (!piece) return [];
+            
+            const captures = getAvailableCaptures(q, r);
+            
+            // If captures are available, only return captures (mandatory)
+            if (captures.length > 0) {
+                return captures;
+            }
+            
+            // Otherwise, return normal moves
+            const moves = [];
+            const directions = getHexDirections();
+            
+            directions.forEach(([dq, dr]) => {
+                const newQ = q + dq;
+                const newR = r + dr;
+                
+                if (isValidMove(q, r, newQ, newR)) {
+                    moves.push([newQ, newR]);
+                }
+            });
+            
+            return moves;
+        }
+
+        // Get hexagonal directions (6 directions) - updated for flat-top hexagons
+        function getHexDirections() {
+            return [
+                [1, 0], [0, 1], [-1, 1],
+                [-1, 0], [0, -1], [1, -1]
+            ];
+        }
+
+        // Check if a move is valid
+        function isValidMove(fromQ, fromR, toQ, toR) {
+            const fromKey = `${fromQ},${fromR}`;
+            const toKey = `${toQ},${toR}`;
+            
+            // Check bounds
+            if (!gameState.board[toKey]) return false;
+            
+            // Destination must be empty
+            if (gameState.board[toKey].piece) return false;
+            
+            const piece = gameState.board[fromKey].piece;
+            if (!piece) return false;
+            
+            const dq = toQ - fromQ;
+            const dr = toR - fromR;
+            
+            // Check if this is a valid hex direction
+            const directions = getHexDirections();
+            let isValidDirection = false;
+            let distance = 0;
+            
+            for (const [dirQ, dirR] of directions) {
+                if (dq === dirQ && dr === dirR) {
+                    distance = 1;
+                    isValidDirection = true;
+                    break;
+                } else if (dq === dirQ * 2 && dr === dirR * 2) {
+                    distance = 2;
+                    isValidDirection = true;
+                    break;
+                }
+            }
+            
+            if (!isValidDirection) return false;
+            
+            // Simple move (distance 1)
+            if (distance === 1) {
+                // If captures are available, must capture instead
+                const availableCaptures = getAvailableCaptures(fromQ, fromR);
+                return availableCaptures.length === 0;
+            }
+            
+            // Jump move (distance 2)
+            if (distance === 2) {
+                const midQ = fromQ + dq / 2;
+                const midR = fromR + dr / 2;
+                const midKey = `${midQ},${midR}`;
+                const midPiece = gameState.board[midKey]?.piece;
+                
+                // Must jump over opponent piece
+                return midPiece && midPiece.player !== piece.player;
+            }
+            
+            return false;
+        }
+        
+        // Get available captures for a piece
+        function getAvailableCaptures(q, r) {
+            const piece = gameState.board[`${q},${r}`].piece;
+            if (!piece) return [];
+            
+            const captures = [];
+            const directions = getHexDirections();
+            
+            directions.forEach(([dq, dr]) => {
+                const jumpOverQ = q + dq;
+                const jumpOverR = r + dr;
+                const landQ = q + dq * 2;
+                const landR = r + dr * 2;
+                
+                const jumpOverKey = `${jumpOverQ},${jumpOverR}`;
+                const landKey = `${landQ},${landR}`;
+                
+                // Check bounds and pieces
+                if (gameState.board[jumpOverKey] && gameState.board[landKey]) {
+                    const jumpOverPiece = gameState.board[jumpOverKey].piece;
+                    const landPiece = gameState.board[landKey].piece;
+                    
+                    // Must jump over opponent and land on empty
+                    if (jumpOverPiece && jumpOverPiece.player !== piece.player && !landPiece) {
+                        captures.push([landQ, landR]);
+                        console.log(`Found capture for piece at ${q},${r}: jump over ${jumpOverQ},${jumpOverR} to land at ${landQ},${landR}`);
+                    }
+                }
+            });
+            
+            console.log(`Piece at ${q},${r} has ${captures.length} available captures`);
+            return captures;
+        }
+
+        // Move a piece
+        function movePiece(fromQ, fromR, toQ, toR) {
+            const fromKey = `${fromQ},${fromR}`;
+            const toKey = `${toQ},${toR}`;
+            const piece = gameState.board[fromKey].piece;
+            
+            // Check for jump
+            const dq = toQ - fromQ;
+            const dr = toR - fromR;
+            
+            // Determine if this was a capture by checking if it's a 2-step move in a valid direction
+            let wasCapture = false;
+            const directions = getHexDirections();
+            
+            for (const [dirQ, dirR] of directions) {
+                if (dq === dirQ * 2 && dr === dirR * 2) {
+                    wasCapture = true;
+                    break;
+                }
+            }
+            
+            if (wasCapture) {
+                // Capture jumped piece
+                const midQ = fromQ + dq / 2;
+                const midR = fromR + dr / 2;
+                
+                capturePiece(midQ, midR);
+                playSound('capture');
+                addCommentary(`SPECTACULAR JUMP! ${piece.player === 1 ? 'Red' : 'Blue'} captures an opponent!`);
+                wasCapture = true;
+            } else {
+                // Calculate pitch based on board position (pieces get higher pitched as they advance)
+                const pitch = piece.player === 1 ? (1 + (toR + 5) * 0.1) : (1 + (5 - toR) * 0.1);
+                playSound('move', pitch);
+                addCommentary(`${piece.player === 1 ? 'Red' : 'Blue'} advances strategically across the hexagonal battlefield!`);
+            }
+            
+            // Move piece
+            gameState.board[toKey].piece = piece;
+            gameState.board[fromKey].piece = null;
+            
+            // Update DOM - remove old piece and place new one
+            const fromCell = document.querySelector(`[data-q="${fromQ}"][data-r="${fromR}"]`);
+            const pieceElement = fromCell.querySelector('.piece');
+            
+            if (pieceElement) {
+                pieceElement.remove();
+            }
+            
+            // Place the piece in the new location with proper click handlers
+            placePiece(toQ, toR, piece.player, piece.isKing);
+            
+            // Check for king promotion
+            checkKingPromotion(toQ, toR);
+            
+            // If it was a capture, check for additional captures
+            if (wasCapture) {
+                const additionalCaptures = getAvailableCaptures(toQ, toR);
+                if (additionalCaptures.length > 0) {
+                    // Must continue capturing - don't switch turns yet
+                    selectPiece(toQ, toR);
+                    addCommentary(`${piece.player === 1 ? 'Red' : 'Blue'} must continue jumping! More captures available!`);
+                    return;
+                }
+            }
+            
+            // Clear selection and switch turns
+            clearSelection();
+            const oldPlayer = gameState.currentPlayer;
+            gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+            console.log(`Turn switched from player ${oldPlayer} to player ${gameState.currentPlayer}`);
+            updateDisplay();
+            
+            // Check for game end
+            checkGameEnd();
+        }
+
+        // Capture a piece
+        function capturePiece(q, r) {
+            const key = `${q},${r}`;
+            const cell = document.querySelector(`[data-q="${q}"][data-r="${r}"]`);
+            const piece = cell.querySelector('.piece');
+            
+            if (piece) {
+                // Add capture animation
+                piece.classList.add('capturing');
+                setTimeout(() => {
+                    piece.remove();
+                }, 1500); // Increased from 500ms to match new extreme animation
+                
+            }
+            
+            gameState.board[key].piece = null;
+        }
+
+        // Check for king promotion
+        function checkKingPromotion(q, r) {
+            const piece = gameState.board[`${q},${r}`].piece;
+            if (!piece || piece.isKing) return;
+            
+            // Promote to king if reaching opposite end
+            const shouldPromote = (piece.player === 1 && r >= 3) || (piece.player === 2 && r <= -3);
+            
+            if (shouldPromote) {
+                piece.isKing = true;
+                const cell = document.querySelector(`[data-q="${q}"][data-r="${r}"]`);
+                const pieceElement = cell.querySelector('.piece');
+                if (pieceElement) {
+                    pieceElement.classList.add('king');
+                }
+                playSound('promotion');
+                addCommentary(`CORONATION! ${piece.player === 1 ? 'Red' : 'Blue'} piece becomes a KING!`);
+            }
+        }
+
+        // Check for game end
+        function checkGameEnd() {
+            const player1Pieces = [];
+            const player2Pieces = [];
+            
+            Object.keys(gameState.board).forEach(key => {
+                const piece = gameState.board[key].piece;
+                if (piece) {
+                    if (piece.player === 1) player1Pieces.push(key);
+                    else player2Pieces.push(key);
+                }
+            });
+            
+            if (player1Pieces.length === 0) {
+                endGame(2);
+            } else if (player2Pieces.length === 0) {
+                endGame(1);
+            }
+        }
+
+        // End game
+        function endGame(winner) {
+            gameState.gameActive = false;
+            clearInterval(gameState.timerInterval);
+            playSound('victory');
+            addCommentary(`🏆 GAME OVER! ${winner === 1 ? 'RED' : 'BLUE'} WINS THE HEXAGONAL CHAMPIONSHIP!`);
+            addCommentary("What an absolutely THRILLING match! The crowd goes wild!");
+        }
+
+        // Update display
+        function updateDisplay() {
+            const currentPlayerDiv = document.getElementById('currentPlayer');
+            currentPlayerDiv.textContent = `Player ${gameState.currentPlayer}'s Turn`;
+            currentPlayerDiv.className = `current-player player${gameState.currentPlayer}-turn`;
+        }
+
+        // Add commentary
+        function addCommentary(text) {
+            const commentary = document.getElementById('commentary');
+            const line = document.createElement('div');
+            line.className = 'commentary-line';
+            line.textContent = text;
+            commentary.appendChild(line);
+            commentary.scrollTop = commentary.scrollHeight;
+        }
+
+        // Play sound effect
+        function playSound(type, intensity = 1) {
+            if (!gameState.soundEnabled) return;
+            
+            try {
+                switch(type) {
+                    case 'move':
+                        soundEffects.move(intensity);
+                        break;
+                    case 'capture':
+                        captureCount++;
+                        soundEffects.capture(Math.min(captureCount * 0.3, 2));
+                        break;
+                    case 'promotion':
+                        soundEffects.promotion();
+                        break;
+                    case 'victory':
+                        soundEffects.victory();
+                        break;
+                    case 'tornado':
+                        soundEffects.tornado();
+                        break;
+                    case 'nightmare':
+                        soundEffects.nightmare();
+                        break;
+                }
+            } catch (e) {
+                console.log('Audio not supported');
+            }
+        }
+
+        // Change color palette
+        function changePalette() {
+            const select = document.getElementById('paletteSelect');
+            gameState.currentPalette = select.value;
+            applyPalette();
+            
+            if (gameState.currentPalette === 'nightmare') {
+                playSound('nightmare');
+                addCommentary(`👹 ${colorPalettes[gameState.currentPalette].name} MODE ACTIVATED!`);
+                addCommentary("THE ARENA DESCENDS INTO DARKNESS AND TERROR!");
+                addCommentary("The very air crackles with malevolent energy!");
+                addCommentary("This is absolutely HORRIFYING to witness!");
+            } else {
+                addCommentary(`🎨 Color palette changed to ${colorPalettes[gameState.currentPalette].name}!`);
+                addCommentary("The arena transforms with stunning new colors!");
+            }
+        }
+
+        // Apply current color palette
+        function applyPalette() {
+            const palette = colorPalettes[gameState.currentPalette];
+            const root = document.documentElement;
+            
+            // Update CSS custom properties
+            document.body.style.background = palette.background;
+            
+            // Remove all theme classes
+            document.body.classList.remove('nightmare-mode');
+            
+            // Add nightmare mode effects
+            if (gameState.currentPalette === 'nightmare') {
+                document.body.classList.add('nightmare-mode');
+            }
+            
+            // Update board colors
+            document.querySelectorAll('.hex-cell:not(.light)').forEach(cell => {
+                cell.style.background = palette.boardDark;
+                cell.querySelector('::before') && (cell.style.borderBottomColor = palette.boardDark);
+                cell.querySelector('::after') && (cell.style.borderTopColor = palette.boardDark);
+            });
+            
+            document.querySelectorAll('.hex-cell.light').forEach(cell => {
+                cell.style.background = palette.boardLight;
+            });
+            
+            // Update piece colors
+            updatePieceColors();
+        }
+
+        // Update piece colors based on current palette
+        function updatePieceColors() {
+            const palette = colorPalettes[gameState.currentPalette];
+            
+            document.querySelectorAll('.piece.player1:not(.pizza)').forEach(piece => {
+                piece.style.background = `radial-gradient(circle, ${palette.player1.primary}, ${palette.player1.secondary})`;
+                piece.style.boxShadow = `0 4px 8px ${palette.player1.shadow}`;
+            });
+            
+            document.querySelectorAll('.piece.player2:not(.pizza)').forEach(piece => {
+                piece.style.background = `radial-gradient(circle, ${palette.player2.primary}, ${palette.player2.secondary})`;
+                piece.style.boxShadow = `0 4px 8px ${palette.player2.shadow}`;
+            });
+        }
+
+        // Toggle sound
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            const btn = event.target;
+            btn.textContent = gameState.soundEnabled ? '🔊 Sound' : '🔇 Muted';
+            
+            if (gameState.soundEnabled) {
+                addCommentary("🔊 Sound effects ACTIVATED! The arena comes alive!");
+                playSound('move', 1.5);
+            } else {
+                addCommentary("🔇 Sound muted. Playing in peaceful silence.");
+            }
+        }
+
+        // New game
+        function newGame() {
+            gameState = {
+                board: {},
+                currentPlayer: 1,
+                selectedPiece: null,
+                gameActive: true,
+                timer1: 300,
+                timer2: 300,
+                timerActive: false,
+                timerInterval: null,
+                pizzaMode: gameState.pizzaMode,
+                currentPalette: gameState.currentPalette,
+                soundEnabled: gameState.soundEnabled
+            };
+            captureCount = 0;
+            initGame();
+            addCommentary("🆕 NEW GAME STARTED! The hexagonal arena is reset!");
+        }
+
+        // Flip board (for losing players)
+        function flipBoard() {
+            const board = document.getElementById('hexBoard');
+            board.style.transform = board.style.transform === 'rotate(180deg)' ? '' : 'rotate(180deg)';
+            addCommentary("🔄 The board has been flipped! A tactical perspective change!");
+        }
+
+        // Toggle timer
+        function toggleTimer() {
+            gameState.timerActive = !gameState.timerActive;
+            if (gameState.timerActive) {
+                startTimer();
+                addCommentary("⏰ Timer activated! The pressure is ON!");
+            } else {
+                clearInterval(gameState.timerInterval);
+                addCommentary("⏰ Timer paused. Take your time to strategize!");
+            }
+        }
+
+        // Start timer
+        function startTimer() {
+            gameState.timerInterval = setInterval(() => {
+                if (gameState.currentPlayer === 1) {
+                    gameState.timer1--;
+                    if (gameState.timer1 <= 0) {
+                        endGame(2);
+                        return;
+                    }
+                } else {
+                    gameState.timer2--;
+                    if (gameState.timer2 <= 0) {
+                        endGame(1);
+                        return;
+                    }
+                }
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        // Update timer display
+        function updateTimerDisplay() {
+            document.getElementById('timer1').textContent = formatTime(gameState.timer1);
+            document.getElementById('timer2').textContent = formatTime(gameState.timer2);
+        }
+
+        // Format time
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Toggle pizza mode
+        function togglePizzaMode() {
+            gameState.pizzaMode = !gameState.pizzaMode;
+            
+            if (gameState.pizzaMode) {
+                addCommentary("🍕🌮 FOOD FIGHT MODE ACTIVATED! Pizza vs Tacos!");
+                addCommentary("The aroma of melted cheese and seasoned beef fills the arena!");
+                addCommentary("This is absolutely UNPRECEDENTED in competitive checkers!");
+                addCommentary("It's Italian vs Mexican cuisine in hexagonal combat!");
+            } else {
+                addCommentary("🍕🌮 Food fight mode deactivated. Back to traditional pieces.");
+                addCommentary("The crowd seems disappointed - they loved the culinary battle!");
+            }
+            
+            // Update all existing pieces
+            document.querySelectorAll('.piece').forEach(piece => {
+                if (gameState.pizzaMode) {
+                    piece.classList.add('pizza');
+                } else {
+                    piece.classList.remove('pizza');
+                }
+            });
+        }
+
+        // Tornado event
+        function tornadoEvent() {
+            addCommentary("🌪️ TORNADO WARNING! A massive twister approaches the hexagonal arena!");
+            addCommentary("Pieces are being swept up in the whirlwind!");
+            addCommentary("Some pieces may not survive this natural disaster!");
+            
+            playSound('tornado');
+            
+            // Add board shaking
+            const board = document.getElementById('hexBoard');
+            board.classList.add('tornado-active');
+            
+            // Get all pieces and their positions
+            const pieces = [];
+            document.querySelectorAll('.piece').forEach(piece => {
+                const cell = piece.parentElement;
+                const q = parseInt(cell.dataset.q);
+                const r = parseInt(cell.dataset.r);
+                pieces.push({ element: piece, q, r, cell });
+            });
+            
+            // Animate all pieces with tornado effect
+            pieces.forEach((pieceData, index) => {
+                setTimeout(() => {
+                    pieceData.element.classList.add('tornado');
+                }, index * 50);
+            });
+            
+            // After 2 seconds, randomly redistribute pieces
+            setTimeout(() => {
+                // Get all empty cells
+                const emptyCells = [];
+                Object.keys(gameState.board).forEach(key => {
+                    if (!gameState.board[key].piece) {
+                        const [q, r] = key.split(',').map(Number);
+                        emptyCells.push({ q, r, key });
+                    }
+                });
+                
+                // Some pieces die in the tornado (20% chance)
+                const survivingPieces = pieces.filter(() => Math.random() > 0.2);
+                
+                // Shuffle surviving pieces to random positions
+                const shuffledPieces = [...survivingPieces].sort(() => Math.random() - 0.5);
+                const shuffledCells = [...emptyCells].sort(() => Math.random() - 0.5);
+                
+                // Clear all current positions
+                pieces.forEach(pieceData => {
+                    gameState.board[`${pieceData.q},${pieceData.r}`].piece = null;
+                    pieceData.element.remove();
+                });
+                
+                // Place surviving pieces in new random positions
+                shuffledPieces.forEach((pieceData, index) => {
+                    if (index < shuffledCells.length) {
+                        const newCell = shuffledCells[index];
+                        const piece = gameState.board[`${pieceData.q},${pieceData.r}`] ? 
+                                    gameState.board[`${pieceData.q},${pieceData.r}`].piece : 
+                                    { player: pieceData.element.classList.contains('player1') ? 1 : 2, 
+                                      isKing: pieceData.element.classList.contains('king') };
+                        
+                        if (piece) {
+                            placePiece(newCell.q, newCell.r, piece.player, piece.isKing);
+                        }
+                    }
+                });
+                
+                // Remove tornado effects
+                board.classList.remove('tornado-active');
+                document.querySelectorAll('.piece').forEach(piece => {
+                    piece.classList.remove('tornado');
+                });
+                
+                // Update display
+                updateDisplay();
+                
+                const casualties = pieces.length - shuffledPieces.length;
+                addCommentary(`🌪️ The tornado passes! ${casualties} pieces were lost in the chaos!`);
+                addCommentary("The surviving pieces have been scattered across the battlefield!");
+                if (casualties > 0) {
+                    addCommentary("The crowd is in shock at this unprecedented natural disaster!");
+                }
+                
+            }, 2000);
+        }
+
+        // Rage mode
+        function rageMode() {
+            addCommentary("🔥💥 RAGE MODE ACTIVATED! THE TABLE HAS BEEN FLIPPED!");
+            addCommentary("Pieces are flying everywhere! Total chaos!");
+            addCommentary("Security is rushing to the scene!");
+            
+            // Add visual chaos
+            document.querySelectorAll('.piece').forEach((piece, index) => {
+                setTimeout(() => {
+                    piece.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 720}deg) scale(0)`;
+                    piece.style.opacity = '0';
+                }, index * 100);
+            });
+            
+            setTimeout(() => {
+                newGame();
+                addCommentary("Order has been restored! A new game begins!");
+            }, 3000);
+        }
+
+        // Keyboard input handling
+        function setupKeyboardHandlers() {
+            document.addEventListener('keydown', (e) => {
+                if (gameState.commandMode) {
+                    handleCommandInput(e);
+                    return;
+                }
+                
+                switch (gameState.inputMode) {
+                    case 'vi':
+                        handleViInput(e);
+                        break;
+                    case 'emacs':
+                        handleEmacsInput(e);
+                        break;
+                    default:
+                        handleNormalInput(e);
+                        break;
+                }
+            });
+        }
+
+        // Vi keybindings
+        function handleViInput(e) {
+            const directions = {
+                'h': [-1, 0],  // left
+                'j': [0, 1],   // down
+                'k': [0, -1],  // up
+                'l': [1, 0],   // right
+                'y': [-1, -1], // up-left
+                'u': [1, -1],  // up-right
+                'b': [-1, 1],  // down-left
+                'n': [1, 1]    // down-right
+            };
+            
+            if (directions[e.key]) {
+                e.preventDefault();
+                const [dq, dr] = directions[e.key];
+                moveKeyboardSelection(dq, dr);
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                selectCurrentCell();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                moveToCurrentCell();
+            } else if (e.key === ':') {
+                e.preventDefault();
+                toggleCommandLine();
+            }
+        }
+
+        // Emacs keybindings
+        function handleEmacsInput(e) {
+            if (e.ctrlKey) {
+                const directions = {
+                    'b': [-1, 0],  // left
+                    'f': [1, 0],   // right
+                    'p': [0, -1],  // up
+                    'n': [0, 1],   // down
+                };
+                
+                if (directions[e.key]) {
+                    e.preventDefault();
+                    const [dq, dr] = directions[e.key];
+                    moveKeyboardSelection(dq, dr);
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    selectCurrentCell();
+                } else if (e.key === 'c') {
+                    e.preventDefault();
+                    toggleCommandLine();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                moveToCurrentCell();
+            }
+        }
+
+        // Normal keyboard shortcuts
+        function handleNormalInput(e) {
+            if (e.key === '`' || e.key === '~') {
+                e.preventDefault();
+                toggleCommandLine();
+            }
+        }
+
+        // Command line input handling
+        function handleCommandInput(e) {
+            const input = document.getElementById('commandInput');
+            
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                toggleCommandLine();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                executeCommand(input.value);
+                input.value = '';
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigateHistory(-1);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                navigateHistory(1);
+            }
+        }
+
+        // Move keyboard selection
+        function moveKeyboardSelection(dq, dr) {
+            const newQ = gameState.selectedCell.q + dq;
+            const newR = gameState.selectedCell.r + dr;
+            
+            if (gameState.board[`${newQ},${newR}`]) {
+                // Remove old selection
+                const oldCell = document.querySelector('.hex-cell.keyboard-selected');
+                if (oldCell) oldCell.classList.remove('keyboard-selected');
+                
+                // Add new selection
+                gameState.selectedCell = { q: newQ, r: newR };
+                const newCell = document.querySelector(`[data-q="${newQ}"][data-r="${newR}"]`);
+                if (newCell) newCell.classList.add('keyboard-selected');
+                
+                addCommentary(`Keyboard cursor moved to ${newQ},${newR}`);
+            }
+        }
+
+        // Select current cell
+        function selectCurrentCell() {
+            const { q, r } = gameState.selectedCell;
+            const piece = gameState.board[`${q},${r}`].piece;
+            
+            if (piece && piece.player === gameState.currentPlayer) {
+                selectPiece(q, r);
+                addCommentary(`Selected piece at ${q},${r} using ${gameState.inputMode} controls!`);
+            }
+        }
+
+        // Move to current cell
+        function moveToCurrentCell() {
+            const { q, r } = gameState.selectedCell;
+            if (gameState.selectedPiece) {
+                handleCellClick(q, r);
+            }
+        }
+
+        // Toggle command line
+        function toggleCommandLine() {
+            const cmdLine = document.getElementById('commandLine');
+            const input = document.getElementById('commandInput');
+            
+            gameState.commandMode = !gameState.commandMode;
+            
+            if (gameState.commandMode) {
+                cmdLine.classList.add('visible');
+                input.focus();
+                updateCommandPrefix();
+                addCommentary("⌨️ Command line activated! Type 'help' for commands.");
+            } else {
+                cmdLine.classList.remove('visible');
+                addCommentary("⌨️ Command line deactivated.");
+            }
+        }
+
+        // Update command prefix based on input mode
+        function updateCommandPrefix() {
+            const prefix = document.getElementById('commandPrefix');
+            switch (gameState.inputMode) {
+                case 'vi':
+                    prefix.textContent = ':';
+                    break;
+                case 'emacs':
+                    prefix.textContent = 'M-x';
+                    break;
+                default:
+                    prefix.textContent = '$';
+                    break;
+            }
+        }
+
+        // Execute command
+        function executeCommand(cmd) {
+            if (!cmd.trim()) return;
+            
+            gameState.commandHistory.push(cmd);
+            gameState.historyIndex = gameState.commandHistory.length;
+            
+            addCommandOutput(`${document.getElementById('commandPrefix').textContent} ${cmd}`);
+            
+            const args = cmd.trim().split(' ');
+            const command = args[0].toLowerCase();
+            
+            switch (command) {
+                case 'help':
+                    showHelp();
+                    break;
+                case 'move':
+                    if (args.length >= 3) {
+                        const from = args[1].split(',');
+                        const to = args[2].split(',');
+                        if (from.length === 2 && to.length === 2) {
+                            const fromQ = parseInt(from[0]);
+                            const fromR = parseInt(from[1]);
+                            const toQ = parseInt(to[0]);
+                            const toR = parseInt(to[1]);
+                            
+                            if (isValidMove(fromQ, fromR, toQ, toR)) {
+                                movePiece(fromQ, fromR, toQ, toR);
+                                addCommandOutput(`Moved piece from ${fromQ},${fromR} to ${toQ},${toR}`);
+                            } else {
+                                addCommandOutput('Invalid move!');
+                            }
+                        } else {
+                            addCommandOutput('Usage: move q1,r1 q2,r2');
+                        }
+                    } else {
+                        addCommandOutput('Usage: move q1,r1 q2,r2');
+                    }
+                    break;
+                case 'select':
+                    if (args.length >= 2) {
+                        const pos = args[1].split(',');
+                        if (pos.length === 2) {
+                            const q = parseInt(pos[0]);
+                            const r = parseInt(pos[1]);
+                            gameState.selectedCell = { q, r };
+                            selectCurrentCell();
+                            addCommandOutput(`Selected cell ${q},${r}`);
+                        } else {
+                            addCommandOutput('Usage: select q,r');
+                        }
+                    } else {
+                        addCommandOutput('Usage: select q,r');
+                    }
+                    break;
+                case 'pizza':
+                    togglePizzaMode();
+                    addCommandOutput('Pizza mode toggled!');
+                    break;
+                case 'tornado':
+                    tornadoEvent();
+                    addCommandOutput('Tornado unleashed!');
+                    break;
+                case 'rage':
+                    rageMode();
+                    addCommandOutput('RAGE MODE ACTIVATED!');
+                    break;
+                case 'palette':
+                    if (args.length >= 2 && colorPalettes[args[1]]) {
+                        gameState.currentPalette = args[1];
+                        document.getElementById('paletteSelect').value = args[1];
+                        applyPalette();
+                        addCommandOutput(`Palette changed to ${args[1]}`);
+                    } else {
+                        addCommandOutput('Available palettes: ' + Object.keys(colorPalettes).join(', '));
+                    }
+                    break;
+                case 'quit':
+                case 'exit':
+                    toggleCommandLine();
+                    break;
+                default:
+                    addCommandOutput(`Unknown command: ${command}. Type 'help' for available commands.`);
+                    break;
+            }
+        }
+
+        // Show help
+        function showHelp() {
+            const helpText = [
+                'Available commands:',
+                '  help - Show this help',
+                '  move q1,r1 q2,r2 - Move piece from (q1,r1) to (q2,r2)',
+                '  select q,r - Select cell at coordinates',
+                '  pizza - Toggle pizza mode',
+                '  tornado - Activate tornado',
+                '  rage - Activate rage mode',
+                '  palette [name] - Change color palette',
+                '  quit/exit - Close command line',
+                '',
+                'Vi mode: hjkl + yub n for movement, space to select, enter to move',
+                'Emacs mode: Ctrl+bfpn for movement, Ctrl+space to select',
+                'Press ESC to close command line'
+            ];
+            
+            helpText.forEach(line => addCommandOutput(line));
+        }
+
+        // Add command output
+        function addCommandOutput(text) {
+            const history = document.getElementById('commandHistory');
+            const output = document.createElement('div');
+            output.className = 'command-output';
+            output.textContent = text;
+            history.appendChild(output);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        // Navigate command history
+        function navigateHistory(direction) {
+            const input = document.getElementById('commandInput');
+            
+            if (direction < 0 && gameState.historyIndex > 0) {
+                gameState.historyIndex--;
+                input.value = gameState.commandHistory[gameState.historyIndex];
+            } else if (direction > 0 && gameState.historyIndex < gameState.commandHistory.length - 1) {
+                gameState.historyIndex++;
+                input.value = gameState.commandHistory[gameState.historyIndex];
+            } else if (direction > 0 && gameState.historyIndex === gameState.commandHistory.length - 1) {
+                gameState.historyIndex++;
+                input.value = '';
+            }
+        }
+
+        // Change input mode
+        function changeInputMode() {
+            const select = document.getElementById('inputModeSelect');
+            gameState.inputMode = select.value;
+            updateCommandPrefix();
+            
+            const modeNames = {
+                'normal': 'Mouse Control',
+                'vi': 'Vi Keybindings',
+                'emacs': 'Emacs Keybindings'
+            };
+            
+            addCommentary(`🖱️⌨️ Input mode changed to ${modeNames[gameState.inputMode]}!`);
+            
+            if (gameState.inputMode !== 'normal') {
+                addCommentary(`Use ${gameState.inputMode === 'vi' ? 'hjkl' : 'Ctrl+bfpn'} to move cursor, space to select!`);
+            }
+        }
+
+        // Initialize the game when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initGame();
+            applyPalette();
+            setupKeyboardHandlers();
+            
+            // Initialize keyboard selection at center
+            gameState.selectedCell = { q: 0, r: 0 };
+            const centerCell = document.querySelector(`[data-q="0"][data-r="0"]`);
+            if (centerCell) centerCell.classList.add('keyboard-selected');
+        });
+    </script>
+</body>
+</html>
