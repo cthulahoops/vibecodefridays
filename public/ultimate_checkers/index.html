@@ -891,23 +891,24 @@
         // Setup initial piece positions
         function setupInitialPieces() {
             // Player 1 (red) pieces - top rows of the board
+            // Dark squares are where (q + r) % 2 !== 0
             const player1Positions = [
-                // Top row (r = -5) - alternating pattern like checkers
-                [-2, -5], [0, -5], [2, -5],
-                // Second row (r = -4) - offset pattern
-                [-3, -4], [-1, -4], [1, -4], [3, -4],
-                // Third row (r = -3) - alternating pattern
-                [-2, -3], [0, -3], [2, -3]
+                // Top row (r = -5) - dark squares: (-4,-5), (-2,-5), (0,-5), (2,-5), (4,-5)
+                [-4, -5], [-2, -5], [0, -5], [2, -5], [4, -5],
+                // Second row (r = -4) - dark squares: (-3,-4), (-1,-4), (1,-4), (3,-4) 
+                [-1, -4], [1, -4], [3, -4], [5, -4],
+                // Third row (r = -3) - dark squares: (-4,-3), (-2,-3), (0,-3), (2,-3), (4,-3)
+                [-4, -3], [-2, -3], [0, -3], [2, -3], [4, -3]
             ];
             
             // Player 2 (blue) pieces - bottom rows of the board  
             const player2Positions = [
-                // Third from bottom row (r = 3) - alternating pattern
-                [-2, 3], [0, 3], [2, 3],
-                // Second from bottom row (r = 4) - offset pattern  
-                [-3, 4], [-1, 4], [1, 4], [3, 4],
-                // Bottom row (r = 5) - alternating pattern
-                [-2, 5], [0, 5], [2, 5]
+                // Third from bottom row (r = 3) - dark squares: (-4,3), (-2,3), (0,3), (2,3), (4,3)
+                [-4, 3], [-2, 3], [0, 3], [2, 3], [4, 3],
+                // Second from bottom row (r = 4) - dark squares: (-3,4), (-1,4), (1,4), (3,4)
+                [-5, 4], [-3, 4], [-1, 4], [1, 4],
+                // Bottom row (r = 5) - dark squares: (-4,5), (-2,5), (0,5), (2,5), (4,5)
+                [-4, 5], [-2, 5], [0, 5], [2, 5], [4, 5]
             ];
             
             player1Positions.forEach(([q, r]) => {
@@ -1006,16 +1007,21 @@
             
             const captures = getAvailableCaptures(q, r);
             
-            // If captures are available, only return captures (mandatory)
+            // If this piece has captures available, only return captures (mandatory)
             if (captures.length > 0) {
                 return captures;
             }
             
-            // Otherwise, return normal moves
-            const moves = [];
-            const directions = getHexDirections();
+            // If ANY piece has mandatory captures, this piece can't move normally
+            if (hasAnyMandatoryCaptures()) {
+                return [];
+            }
             
-            directions.forEach(([dq, dr]) => {
+            // Otherwise, return normal moves using valid directions for this piece
+            const moves = [];
+            const validDirections = getValidDirectionsForPiece(piece, q, r);
+            
+            validDirections.forEach(([dq, dr]) => {
                 const newQ = q + dq;
                 const newR = r + dr;
                 
@@ -1035,6 +1041,61 @@
             ];
         }
 
+        // Get valid directions for a specific piece based on type and player
+        function getValidDirectionsForPiece(piece, q, r) {
+            const allDirections = getHexDirections();
+            
+            if (piece.isKing) {
+                // Kings can move forwards and backwards, but not sideways
+                const kingDirections = [];
+                allDirections.forEach(([dq, dr]) => {
+                    // Allow moves that have a vertical component (dr != 0)
+                    // Exclude pure sideways moves where dr = 0
+                    if (dr !== 0) {
+                        kingDirections.push([dq, dr]);
+                    }
+                });
+                return kingDirections;
+            }
+            
+            // Normal pieces can only move forward, no sideways movement
+            // Player 1 (red) moves from top to bottom (increasing r)
+            // Player 2 (blue) moves from bottom to top (decreasing r)
+            const forwardDirections = [];
+            
+            if (piece.player === 1) {
+                // Player 1 moves "down" the board (positive r direction)
+                allDirections.forEach(([dq, dr]) => {
+                    if (dr > 0) {
+                        forwardDirections.push([dq, dr]);
+                    }
+                });
+            } else {
+                // Player 2 moves "up" the board (negative r direction)
+                allDirections.forEach(([dq, dr]) => {
+                    if (dr < 0) {
+                        forwardDirections.push([dq, dr]);
+                    }
+                });
+            }
+            
+            return forwardDirections;
+        }
+
+        // Check if any piece on the board has mandatory captures
+        function hasAnyMandatoryCaptures() {
+            for (const key in gameState.board) {
+                const piece = gameState.board[key].piece;
+                if (piece && piece.player === gameState.currentPlayer) {
+                    const [q, r] = key.split(',').map(Number);
+                    if (getAvailableCaptures(q, r).length > 0) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         // Check if a move is valid
         function isValidMove(fromQ, fromR, toQ, toR) {
             const fromKey = `${fromQ},${fromR}`;
@@ -1052,12 +1113,12 @@
             const dq = toQ - fromQ;
             const dr = toR - fromR;
             
-            // Check if this is a valid hex direction
-            const directions = getHexDirections();
+            // Get valid directions for this piece
+            const validDirections = getValidDirectionsForPiece(piece, fromQ, fromR);
             let isValidDirection = false;
             let distance = 0;
             
-            for (const [dirQ, dirR] of directions) {
+            for (const [dirQ, dirR] of validDirections) {
                 if (dq === dirQ && dr === dirR) {
                     distance = 1;
                     isValidDirection = true;
@@ -1073,9 +1134,11 @@
             
             // Simple move (distance 1)
             if (distance === 1) {
-                // If captures are available, must capture instead
-                const availableCaptures = getAvailableCaptures(fromQ, fromR);
-                return availableCaptures.length === 0;
+                // Check if ANY player piece has mandatory captures
+                if (hasAnyMandatoryCaptures()) {
+                    return false; // Can't make normal moves if captures are available
+                }
+                return true;
             }
             
             // Jump move (distance 2)
@@ -1098,9 +1161,9 @@
             if (!piece) return [];
             
             const captures = [];
-            const directions = getHexDirections();
+            const validDirections = getValidDirectionsForPiece(piece, q, r);
             
-            directions.forEach(([dq, dr]) => {
+            validDirections.forEach(([dq, dr]) => {
                 const jumpOverQ = q + dq;
                 const jumpOverR = r + dr;
                 const landQ = q + dq * 2;
@@ -1226,8 +1289,8 @@
             const piece = gameState.board[`${q},${r}`].piece;
             if (!piece || piece.isKing) return;
             
-            // Promote to king if reaching opposite end
-            const shouldPromote = (piece.player === 1 && r >= 3) || (piece.player === 2 && r <= -3);
+            // Promote to king if reaching opposite end row
+            const shouldPromote = (piece.player === 1 && r >= 5) || (piece.player === 2 && r <= -5);
             
             if (shouldPromote) {
                 piece.isKing = true;
