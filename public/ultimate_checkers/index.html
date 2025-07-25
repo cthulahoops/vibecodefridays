@@ -875,8 +875,8 @@
             const x = HEX_SIZE * (Math.sqrt(3) * q + Math.sqrt(3)/2 * r);
             const y = HEX_SIZE * (3/2 * r);
             
-            hex.style.left = (x + 200) + 'px';
-            hex.style.top = (y + 250) + 'px';
+            hex.style.left = x + 'px';
+            hex.style.top = y + 'px';
             
             // Alternating colors
             if ((q + r) % 2 === 0) {
