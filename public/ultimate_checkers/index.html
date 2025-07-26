@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ultimate Hexagonal Checkers</title>
     <style>
+        :root {
+            /* Theme color variables */
+            --hex-light-color: #e8e8e8;
+            --hex-medium-color: #888;
+            --hex-dark-color: #444;
+        }
+
         body {
             margin: 0;
             padding: 20px;
@@ -40,7 +47,7 @@
             position: absolute;
             width: 52px;
             height: 30px;
-            background: #444;
+            background: var(--hex-dark-color);
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -54,7 +61,7 @@
             height: 0;
             border-left: 26px solid transparent;
             border-right: 26px solid transparent;
-            border-bottom: 15px solid #444;
+            border-bottom: 15px solid var(--hex-dark-color);
         }
 
         .hex-cell:after {
@@ -66,31 +73,31 @@
             height: 0;
             border-left: 26px solid transparent;
             border-right: 26px solid transparent;
-            border-top: 15px solid #444;
+            border-top: 15px solid var(--hex-dark-color);
         }
 
         .hex-cell.light {
-            background: #e8e8e8;
+            background: var(--hex-light-color);
         }
 
         .hex-cell.light:before {
-            border-bottom-color: #e8e8e8;
+            border-bottom-color: var(--hex-light-color);
         }
 
         .hex-cell.light:after {
-            border-top-color: #e8e8e8;
+            border-top-color: var(--hex-light-color);
         }
 
         .hex-cell.medium {
-            background: #888;
+            background: var(--hex-medium-color);
         }
 
         .hex-cell.medium:before {
-            border-bottom-color: #888;
+            border-bottom-color: var(--hex-medium-color);
         }
 
         .hex-cell.medium:after {
-            border-top-color: #888;
+            border-top-color: var(--hex-medium-color);
         }
 
         .hex-cell:hover {
@@ -320,27 +327,99 @@
             }
         }
 
-        @keyframes tornado {
-            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
-            25% { transform: translate(-50%, -50%) rotate(90deg) scale(1.2); }
-            50% { transform: translate(-50%, -50%) rotate(180deg) scale(0.8); }
-            75% { transform: translate(-50%, -50%) rotate(270deg) scale(1.1); }
-            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+        @keyframes tornado-fling {
+            0% { 
+                transform: translate(-50%, -50%) rotate(0deg) scale(1);
+                opacity: 1;
+            }
+            20% { 
+                transform: translate(-50%, -50%) rotate(180deg) scale(1.5);
+                opacity: 0.9;
+            }
+            40% { 
+                transform: translate(-50%, -50%) rotate(360deg) scale(2);
+                opacity: 0.7;
+            }
+            60% { 
+                transform: translate(-50%, -50%) rotate(540deg) scale(1.5);
+                opacity: 0.5;
+            }
+            80% { 
+                transform: translate(-50%, -50%) rotate(720deg) scale(3);
+                opacity: 0.2;
+            }
+            100% { 
+                transform: translate(-50%, -50%) rotate(900deg) scale(5);
+                opacity: 0;
+            }
         }
 
-        .piece.tornado {
-            animation: tornado 2s ease-in-out;
+        .piece.tornado-fling {
+            animation: tornado-fling 3s ease-out forwards;
+            z-index: 1000;
         }
+
+        /* Directional flinging animations */
+        @keyframes fling-north {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -1000px) rotate(720deg) scale(0.2); opacity: 0; }
+        }
+        
+        @keyframes fling-south {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, 1000px) rotate(720deg) scale(0.2); opacity: 0; }
+        }
+        
+        @keyframes fling-east {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(1000px, -50%) rotate(720deg) scale(0.2); opacity: 0; }
+        }
+        
+        @keyframes fling-west {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(-1000px, -50%) rotate(720deg) scale(0.2); opacity: 0; }
+        }
+        
+        @keyframes fling-northeast {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(800px, -800px) rotate(720deg) scale(0.2); opacity: 0; }
+        }
+        
+        @keyframes fling-northwest {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(-800px, -800px) rotate(720deg) scale(0.2); opacity: 0; }
+        }
+        
+        @keyframes fling-southeast {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(800px, 800px) rotate(720deg) scale(0.2); opacity: 0; }
+        }
+        
+        @keyframes fling-southwest {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(-800px, 800px) rotate(720deg) scale(0.2); opacity: 0; }
+        }
+
+        .piece.fling-north { animation: fling-north 2s ease-out forwards; z-index: 1000; }
+        .piece.fling-south { animation: fling-south 2s ease-out forwards; z-index: 1000; }
+        .piece.fling-east { animation: fling-east 2s ease-out forwards; z-index: 1000; }
+        .piece.fling-west { animation: fling-west 2s ease-out forwards; z-index: 1000; }
+        .piece.fling-northeast { animation: fling-northeast 2s ease-out forwards; z-index: 1000; }
+        .piece.fling-northwest { animation: fling-northwest 2s ease-out forwards; z-index: 1000; }
+        .piece.fling-southeast { animation: fling-southeast 2s ease-out forwards; z-index: 1000; }
+        .piece.fling-southwest { animation: fling-southwest 2s ease-out forwards; z-index: 1000; }
 
         .hex-board.tornado-active {
-            animation: shake 0.1s infinite;
+            animation: tornado-spin 2s linear infinite;
+            transform-origin: center center;
         }
 
-        @keyframes shake {
-            0%, 100% { transform: translateX(0) translateY(0); }
-            25% { transform: translateX(-2px) translateY(-2px); }
-            50% { transform: translateX(2px) translateY(-2px); }
-            75% { transform: translateX(-2px) translateY(2px); }
+        @keyframes tornado-spin {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(90deg) scale(1.1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            75% { transform: rotate(270deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
         }
 
         /* Nightmare mode effects */
@@ -575,6 +654,7 @@
                 player1: { primary: '#ff6600', secondary: '#cc4400', shadow: 'rgba(255, 102, 0, 0.5)' },
                 player2: { primary: '#00aa44', secondary: '#008833', shadow: 'rgba(0, 170, 68, 0.5)' },
                 boardLight: '#88cc88',
+                boardMedium: '#5a8a4f',
                 boardDark: '#2d5016',
                 background: 'linear-gradient(135deg, #1a2e1a, #0d1f0d)'
             },
@@ -583,6 +663,7 @@
                 player1: { primary: '#ff4466', secondary: '#cc2244', shadow: 'rgba(255, 68, 102, 0.5)' },
                 player2: { primary: '#ffaa22', secondary: '#cc8800', shadow: 'rgba(255, 170, 34, 0.5)' },
                 boardLight: '#ffddaa',
+                boardMedium: '#cc9966',
                 boardDark: '#664422',
                 background: 'linear-gradient(135deg, #2e1a0d, #4d2619)'
             },
@@ -591,6 +672,7 @@
                 player1: { primary: '#0066cc', secondary: '#004499', shadow: 'rgba(0, 102, 204, 0.5)' },
                 player2: { primary: '#00ccaa', secondary: '#009988', shadow: 'rgba(0, 204, 170, 0.5)' },
                 boardLight: '#aaeeff',
+                boardMedium: '#6699bb',
                 boardDark: '#224466',
                 background: 'linear-gradient(135deg, #0d1f2e, #194d66)'
             },
@@ -599,6 +681,7 @@
                 player1: { primary: '#ff0000', secondary: '#cc0000', shadow: 'rgba(255, 0, 0, 0.8)' },
                 player2: { primary: '#ff4400', secondary: '#cc2200', shadow: 'rgba(255, 68, 0, 0.8)' },
                 boardLight: '#ffaa44',
+                boardMedium: '#995522',
                 boardDark: '#330000',
                 background: 'linear-gradient(135deg, #1a0000, #4d0000)'
             },
@@ -607,6 +690,7 @@
                 player1: { primary: '#00ff00', secondary: '#00cc00', shadow: 'rgba(0, 255, 0, 0.8)' },
                 player2: { primary: '#88ff00', secondary: '#66cc00', shadow: 'rgba(136, 255, 0, 0.8)' },
                 boardLight: '#44ff44',
+                boardMedium: '#228822',
                 boardDark: '#001100',
                 background: 'linear-gradient(135deg, #001a00, #004d00)'
             },
@@ -615,6 +699,7 @@
                 player1: { primary: '#ffff00', secondary: '#cccc00', shadow: 'rgba(255, 255, 0, 0.9)' },
                 player2: { primary: '#ff00ff', secondary: '#cc00cc', shadow: 'rgba(255, 0, 255, 0.9)' },
                 boardLight: '#ccccff',
+                boardMedium: '#8866cc',
                 boardDark: '#440088',
                 background: 'linear-gradient(135deg, #0a0a1a, #2d0a4d)'
             },
@@ -632,6 +717,7 @@
                 player1: { primary: '#ff6666', secondary: '#cc3333', shadow: 'rgba(255, 102, 102, 0.6)' },
                 player2: { primary: '#6666ff', secondary: '#3333cc', shadow: 'rgba(102, 102, 255, 0.6)' },
                 boardLight: '#ffccff',
+                boardMedium: '#cc99cc',
                 boardDark: '#663366',
                 background: 'linear-gradient(135deg, #ff0066, #0066ff, #66ff00, #ffff00)'
             },
@@ -672,6 +758,7 @@
                 player1: { primary: '#00ff00', secondary: '#00cc00', shadow: 'rgba(0, 255, 0, 1)' },
                 player2: { primary: '#ff0000', secondary: '#cc0000', shadow: 'rgba(255, 0, 0, 1)' },
                 boardLight: '#002200',
+                boardMedium: '#001100',
                 boardDark: '#000000',
                 background: 'linear-gradient(135deg, #000000, #001100, #000000, #002200)'
             }
@@ -1432,7 +1519,12 @@
             const palette = colorPalettes[gameState.currentPalette];
             const root = document.documentElement;
             
-            // Update CSS custom properties
+            // Update CSS custom properties for hex colors
+            root.style.setProperty('--hex-light-color', palette.boardLight || '#e8e8e8');
+            root.style.setProperty('--hex-medium-color', palette.boardMedium || '#888');
+            root.style.setProperty('--hex-dark-color', palette.boardDark || '#444');
+            
+            // Update background
             document.body.style.background = palette.background;
             
             // Remove all theme classes
@@ -1442,19 +1534,6 @@
             if (gameState.currentPalette === 'nightmare') {
                 document.body.classList.add('nightmare-mode');
             }
-            
-            // Update board colors
-            document.querySelectorAll('.hex-cell:not(.light):not(.medium)').forEach(cell => {
-                cell.style.background = palette.boardDark || '#444';
-            });
-            
-            document.querySelectorAll('.hex-cell.light').forEach(cell => {
-                cell.style.background = palette.boardLight || '#e8e8e8';
-            });
-            
-            document.querySelectorAll('.hex-cell.medium').forEach(cell => {
-                cell.style.background = palette.boardMedium || '#888';
-            });
             
             // Update piece colors
             updatePieceColors();
@@ -1588,12 +1667,12 @@
         // Tornado event
         function tornadoEvent() {
             addCommentary("🌪️ TORNADO WARNING! A massive twister approaches the hexagonal arena!");
-            addCommentary("Pieces are being swept up in the whirlwind!");
-            addCommentary("Some pieces may not survive this natural disaster!");
+            addCommentary("The board is spinning out of control!");
+            addCommentary("Pieces are being flung in all directions!");
             
             playSound('tornado');
             
-            // Add board shaking
+            // Add board spinning
             const board = document.getElementById('hexBoard');
             board.classList.add('tornado-active');
             
@@ -1606,69 +1685,79 @@
                 pieces.push({ element: piece, q, r, cell });
             });
             
-            // Animate all pieces with tornado effect
-            pieces.forEach((pieceData, index) => {
-                setTimeout(() => {
-                    pieceData.element.classList.add('tornado');
-                }, index * 50);
-            });
+            // Fling directions for random piece flinging
+            const flingDirections = [
+                'fling-north', 'fling-south', 'fling-east', 'fling-west',
+                'fling-northeast', 'fling-northwest', 'fling-southeast', 'fling-southwest'
+            ];
             
-            // After 2 seconds, randomly redistribute pieces
+            // After 1 second of spinning, start flinging pieces
             setTimeout(() => {
-                // Get all empty cells
+                addCommentary("PIECES ARE FLYING EVERYWHERE!");
+                
+                pieces.forEach((pieceData, index) => {
+                    setTimeout(() => {
+                        // Random direction for each piece
+                        const randomDirection = flingDirections[Math.floor(Math.random() * flingDirections.length)];
+                        pieceData.element.classList.add(randomDirection);
+                        
+                        // Clear the piece from the board state immediately
+                        gameState.board[`${pieceData.q},${pieceData.r}`].piece = null;
+                    }, index * 100);
+                });
+            }, 1000);
+            
+            // After 4 seconds, clean up and redistribute survivors
+            setTimeout(() => {
+                // Stop board spinning
+                board.classList.remove('tornado-active');
+                
+                // Remove all pieces from DOM
+                document.querySelectorAll('.piece').forEach(piece => {
+                    piece.remove();
+                });
+                
+                // Get all empty cells for redistribution
                 const emptyCells = [];
                 Object.keys(gameState.board).forEach(key => {
-                    if (!gameState.board[key].piece) {
-                        const [q, r] = key.split(',').map(Number);
-                        emptyCells.push({ q, r, key });
+                    const [q, r] = key.split(',').map(Number);
+                    emptyCells.push({ q, r, key });
+                });
+                
+                // Some pieces survive the tornado (30% chance each)
+                const survivorData = [];
+                pieces.forEach(pieceData => {
+                    if (Math.random() > 0.7) { // 30% survival rate
+                        survivorData.push({
+                            player: pieceData.element.classList.contains('player1') ? 1 : 2,
+                            isKing: pieceData.element.classList.contains('king')
+                        });
                     }
                 });
                 
-                // Some pieces die in the tornado (20% chance)
-                const survivingPieces = pieces.filter(() => Math.random() > 0.2);
-                
-                // Shuffle surviving pieces to random positions
-                const shuffledPieces = [...survivingPieces].sort(() => Math.random() - 0.5);
+                // Shuffle survivors to random positions
                 const shuffledCells = [...emptyCells].sort(() => Math.random() - 0.5);
                 
-                // Clear all current positions
-                pieces.forEach(pieceData => {
-                    gameState.board[`${pieceData.q},${pieceData.r}`].piece = null;
-                    pieceData.element.remove();
-                });
-                
                 // Place surviving pieces in new random positions
-                shuffledPieces.forEach((pieceData, index) => {
+                survivorData.forEach((piece, index) => {
                     if (index < shuffledCells.length) {
                         const newCell = shuffledCells[index];
-                        const piece = gameState.board[`${pieceData.q},${pieceData.r}`] ? 
-                                    gameState.board[`${pieceData.q},${pieceData.r}`].piece : 
-                                    { player: pieceData.element.classList.contains('player1') ? 1 : 2, 
-                                      isKing: pieceData.element.classList.contains('king') };
-                        
-                        if (piece) {
-                            placePiece(newCell.q, newCell.r, piece.player, piece.isKing);
-                        }
+                        placePiece(newCell.q, newCell.r, piece.player, piece.isKing);
                     }
-                });
-                
-                // Remove tornado effects
-                board.classList.remove('tornado-active');
-                document.querySelectorAll('.piece').forEach(piece => {
-                    piece.classList.remove('tornado');
                 });
                 
                 // Update display
                 updateDisplay();
                 
-                const casualties = pieces.length - shuffledPieces.length;
-                addCommentary(`🌪️ The tornado passes! ${casualties} pieces were lost in the chaos!`);
-                addCommentary("The surviving pieces have been scattered across the battlefield!");
+                const casualties = pieces.length - survivorData.length;
+                addCommentary(`🌪️ The tornado has passed! ${casualties} pieces were completely obliterated!`);
+                addCommentary(`Only ${survivorData.length} pieces managed to survive the chaos!`);
+                addCommentary("The surviving pieces have crash-landed randomly across the battlefield!");
                 if (casualties > 0) {
-                    addCommentary("The crowd is in shock at this unprecedented natural disaster!");
+                    addCommentary("The crowd is absolutely stunned by this catastrophic event!");
                 }
                 
-            }, 2000);
+            }, 4000);
         }
 
         // Rage mode
